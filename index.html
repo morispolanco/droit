@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assistant Juridique Français</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#5D5CDE',
+                        secondary: '#3F3F46',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .loader {
+            border-top-color: #5D5CDE;
+            animation: spinner 1.5s linear infinite;
+        }
+        
+        @keyframes spinner {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .dark .markdown a {
+            color: #8C8CFF;
+        }
+
+        .markdown a {
+            color: #5D5CDE;
+            text-decoration: underline;
+        }
+
+        .markdown ul {
+            list-style-type: disc;
+            margin-left: 1.5rem;
+            margin-top: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .markdown ol {
+            list-style-type: decimal;
+            margin-left: 1.5rem;
+            margin-top: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .markdown h1, .markdown h2, .markdown h3, .markdown h4 {
+            font-weight: bold;
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .markdown h1 { font-size: 1.5rem; }
+        .markdown h2 { font-size: 1.3rem; }
+        .markdown h3 { font-size: 1.1rem; }
+
+        .markdown p {
+            margin-bottom: 0.75rem;
+        }
+
+        .markdown pre {
+            background-color: rgba(0, 0, 0, 0.05);
+            padding: 0.5rem;
+            border-radius: 0.25rem;
+            margin: 0.5rem 0;
+            overflow-x: auto;
+        }
+
+        .dark .markdown pre {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .markdown code {
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body class="bg-white dark:bg-gray-900 min-h-screen transition-colors duration-300">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <header class="mb-6">
+            <div class="flex justify-between items-center mb-4">
+                <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-white">
+                    Assistant Juridique Français
+                </h1>
+                <div class="flex space-x-3">
+                    <button id="languageToggle" class="bg-primary px-3 py-1 rounded text-white text-sm font-medium">
+                        EN
+                    </button>
+                    <button id="themeToggle" class="bg-secondary px-3 py-1 rounded text-white text-sm">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <p class="text-gray-600 dark:text-gray-300" id="appDescription">
+                Posez vos questions juridiques et obtenez des réponses basées sur le droit français.
+            </p>
+        </header>
+
+        <main>
+            <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 mb-6 shadow">
+                <div class="mb-4">
+                    <label for="queryInput" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2" id="queryLabel">
+                        Votre question juridique
+                    </label>
+                    <textarea
+                        id="queryInput"
+                        rows="4"
+                        class="w-full px-3 py-2 text-base text-gray-700 dark:text-white bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                        placeholder="Ex: Quelles sont les conditions pour créer une SAS en France?"
+                    ></textarea>
+                </div>
+                <div class="flex flex-col sm:flex-row justify-between gap-3">
+                    <div class="flex items-center">
+                        <label class="flex items-center space-x-2 text-sm text-gray-700 dark:text-gray-300">
+                            <input type="checkbox" id="detailedMode" class="w-4 h-4 accent-primary">
+                            <span id="detailedModeLabel">Mode détaillé</span>
+                        </label>
+                    </div>
+                    <button
+                        id="submitButton"
+                        class="bg-primary hover:bg-opacity-90 text-white px-4 py-2 rounded-md transition-colors flex items-center justify-center"
+                    >
+                        <span id="submitButtonText">Envoyer</span>
+                        <div id="loadingSpinner" class="loader hidden w-5 h-5 ml-2 border-2 border-white border-solid rounded-full"></div>
+                    </button>
+                </div>
+            </div>
+
+            <div id="responseArea" class="hidden bg-white dark:bg-gray-800 rounded-lg p-4 shadow">
+                <h2 class="text-xl font-semibold mb-3 text-gray-800 dark:text-white" id="responseTitle">Réponse</h2>
+                <div id="responseContent" class="text-gray-700 dark:text-gray-300 markdown"></div>
+            </div>
+
+            <div id="errorArea" class="hidden bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 text-red-700 dark:text-red-300">
+                <h3 class="font-medium mb-2" id="errorTitle">Erreur</h3>
+                <p id="errorMessage"></p>
+            </div>
+
+            <div class="text-gray-500 dark:text-gray-400 text-sm mt-8">
+                <p id="disclaimerText">
+                    Les informations fournies par cet assistant ont une vocation informative et ne constituent en aucun cas un conseil juridique professionnel. Pour toute question spécifique à votre situation, veuillez consulter un avocat.
+                </p>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Theme handling
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            document.documentElement.classList.add('dark');
+        }
+        
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', event => {
+            if (event.matches) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+        });
+
+        // DOM Elements
+        const languageToggle = document.getElementById('languageToggle');
+        const themeToggle = document.getElementById('themeToggle');
+        const queryInput = document.getElementById('queryInput');
+        const submitButton = document.getElementById('submitButton');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const responseArea = document.getElementById('responseArea');
+        const responseContent = document.getElementById('responseContent');
+        const errorArea = document.getElementById('errorArea');
+        const errorMessage = document.getElementById('errorMessage');
+        const detailedMode = document.getElementById('detailedMode');
+
+        // Text elements for translation
+        const elements = {
+            appDescription: document.getElementById('appDescription'),
+            queryLabel: document.getElementById('queryLabel'),
+            submitButtonText: document.getElementById('submitButtonText'),
+            responseTitle: document.getElementById('responseTitle'),
+            errorTitle: document.getElementById('errorTitle'),
+            disclaimerText: document.getElementById('disclaimerText'),
+            detailedModeLabel: document.getElementById('detailedModeLabel')
+        };
+
+        // Language content
+        const translations = {
+            fr: {
+                appDescription: "Posez vos questions juridiques et obtenez des réponses basées sur le droit français.",
+                queryLabel: "Votre question juridique",
+                submitButtonText: "Envoyer",
+                responseTitle: "Réponse",
+                errorTitle: "Erreur",
+                queryPlaceholder: "Ex: Quelles sont les conditions pour créer une SAS en France?",
+                disclaimerText: "Les informations fournies par cet assistant ont une vocation informative et ne constituent en aucun cas un conseil juridique professionnel. Pour toute question spécifique à votre situation, veuillez consulter un avocat.",
+                detailedModeLabel: "Mode détaillé",
+                errors: {
+                    empty: "Veuillez saisir une question.",
+                    network: "Erreur de connexion. Veuillez vérifier votre connexion internet et réessayer.",
+                    api: "Erreur de l'API Gemini. Veuillez réessayer plus tard.",
+                    unknown: "Une erreur inconnue s'est produite. Veuillez réessayer."
+                }
+            },
+            en: {
+                appDescription: "Ask your legal questions and get answers based on French law.",
+                queryLabel: "Your legal question",
+                submitButtonText: "Submit",
+                responseTitle: "Response",
+                errorTitle: "Error",
+                queryPlaceholder: "E.g., What are the conditions for creating an SAS in France?",
+                disclaimerText: "The information provided by this assistant is for informational purposes only and does not constitute professional legal advice. For questions specific to your situation, please consult a lawyer.",
+                detailedModeLabel: "Detailed mode",
+                errors: {
+                    empty: "Please enter a question.",
+                    network: "Connection error. Please check your internet connection and try again.",
+                    api: "Gemini API error. Please try again later.",
+                    unknown: "An unknown error occurred. Please try again."
+                }
+            }
+        };
+
+        // Current language (default: French)
+        let currentLanguage = 'fr';
+
+        // Update UI text based on selected language
+        function updateLanguage(lang) {
+            currentLanguage = lang;
+            document.documentElement.lang = lang;
+            
+            // Update text content
+            for (const [id, element] of Object.entries(elements)) {
+                element.textContent = translations[lang][id];
+            }
+            
+            // Update placeholder
+            queryInput.placeholder = translations[lang].queryPlaceholder;
+            
+            // Update language toggle button
+            languageToggle.textContent = lang === 'fr' ? 'EN' : 'FR';
+        }
+
+        // Toggle theme handler
+        themeToggle.addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
+        });
+
+        // Toggle language handler
+        languageToggle.addEventListener('click', () => {
+            updateLanguage(currentLanguage === 'fr' ? 'en' : 'fr');
+        });
+
+        // Submit query handler
+        submitButton.addEventListener('click', async () => {
+            const query = queryInput.value.trim();
+            
+            // Reset UI
+            hideError();
+            
+            // Validate input
+            if (!query) {
+                showError(translations[currentLanguage].errors.empty);
+                return;
+            }
+            
+            // Show loading state
+            setLoading(true);
+            
+            try {
+                const response = await fetchGeminiResponse(query);
+                displayResponse(response);
+            } catch (error) {
+                console.error('Error:', error);
+                
+                if (error.message.includes('network')) {
+                    showError(translations[currentLanguage].errors.network);
+                } else if (error.message.includes('API')) {
+                    showError(translations[currentLanguage].errors.api);
+                } else {
+                    showError(translations[currentLanguage].errors.unknown);
+                }
+            } finally {
+                setLoading(false);
+            }
+        });
+
+        // Fetch response from Gemini API
+        async function fetchGeminiResponse(query) {
+            try {
+                // Prepare prompt with context about being a French legal assistant
+                const promptPrefix = currentLanguage === 'fr' 
+                    ? "Tu es un assistant juridique français. Réponds à la question suivante en te basant sur le droit français actuel. Utilise un format HTML avec des balises de paragraphe (<p>) pour chaque paragraphe de ta réponse: " 
+                    : "You are a French legal assistant. Answer the following question based on current French law. Use HTML format with paragraph tags (<p>) for each paragraph in your response: ";
+                
+                const detailedModePrompt = detailedMode.checked 
+                    ? (currentLanguage === 'fr' 
+                        ? " Fournis une réponse détaillée avec des références aux articles de loi pertinents si possible. Assure-toi d'utiliser des balises HTML pour structurer ta réponse." 
+                        : " Provide a detailed answer with references to relevant law articles if possible. Make sure to use HTML tags to structure your response.")
+                    : "";
+
+                const fullPrompt = promptPrefix + query + detailedModePrompt;
+
+                const apiKey = "AIzaSyBqhhEYe50_47p9PWbllECcd6FmlRpiUl8";
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                
+                const payload = {
+                    contents: [{
+                        parts: [{ text: fullPrompt }]
+                    }]
+                };
+
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error('API error: ' + response.status);
+                }
+
+                const data = await response.json();
+                
+                // Extract the text response from the API response
+                if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts) {
+                    let text = data.candidates[0].content.parts[0].text;
+                    // Remove markdown code block markers if present
+                    text = text.replace(/```html/g, '').replace(/```/g, '');
+                    return text;
+                } else {
+                    throw new Error('Unexpected API response format');
+                }
+            } catch (error) {
+                console.error('Fetch error:', error);
+                throw new Error('API error: ' + error.message);
+            }
+        }
+
+        // Display the response in the UI with proper HTML formatting
+        function displayResponse(text) {
+            // Convert the text to HTML paragraphs
+            const formattedHtml = formatTextToHtml(text);
+            responseContent.innerHTML = formattedHtml;
+            responseArea.classList.remove('hidden');
+            responseArea.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // Format text to HTML with proper paragraph separation
+        function formatTextToHtml(text) {
+            // Check if the text already contains HTML
+            if (text.includes('<p>') && text.includes('</p>')) {
+                return text; // Return as is if already formatted with HTML paragraphs
+            }
+            
+            // Split by double newlines (paragraph breaks)
+            const paragraphs = text.split(/\n\s*\n/);
+            // Convert each paragraph to an HTML paragraph element
+            return paragraphs
+                .map(p => `<p>${p.trim().replace(/\n/g, '<br>')}</p>`)
+                .join('');
+        }
+
+        // Show error message
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorArea.classList.remove('hidden');
+        }
+
+        // Hide error message
+        function hideError() {
+            errorArea.classList.add('hidden');
+        }
+
+        // Set loading state
+        function setLoading(isLoading) {
+            if (isLoading) {
+                submitButton.disabled = true;
+                loadingSpinner.classList.remove('hidden');
+            } else {
+                submitButton.disabled = false;
+                loadingSpinner.classList.add('hidden');
+            }
+        }
+
+        // Enter key handling for textarea
+        queryInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && e.ctrlKey) {
+                submitButton.click();
+            }
+        });
+
+        // Initialize language
+        updateLanguage('fr');
+    </script>
+</body>
+</html>
